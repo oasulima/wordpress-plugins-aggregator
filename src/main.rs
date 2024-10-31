@@ -1,8 +1,10 @@
-use anyhow::bail;
+use anyhow::{bail, Context};
 use indicatif::{MultiProgress, ProgressBar};
 use reqwest::header::USER_AGENT;
-use std::process::Command;
+use std::{collections::HashSet, fs, process::Command};
 use wordpress_plugins_agregator::models::{Plugin, Plugins};
+
+const PLUGINS_PATH: &str = "/home/ubuntu/plugins/";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -11,26 +13,56 @@ async fn main() -> anyhow::Result<()> {
     let data = get_data(page).await?;
 
     let total_pages = data.info.pages;
+    let total_plugins = data.info.results;
 
     let multiple_progress = MultiProgress::new();
     let progress_pages = multiple_progress.add(ProgressBar::new(total_pages));
     progress_pages.set_position(0);
     let progress_page = multiple_progress.add(ProgressBar::new(data.plugins.len().try_into()?));
     progress_page.set_position(0);
-    let progress_plugins = multiple_progress.add(ProgressBar::new(data.info.results));
+    let progress_plugins = multiple_progress.add(ProgressBar::new(total_plugins));
     progress_plugins.set_position(0);
 
-    process_plugins(&data.plugins, &progress_page, &progress_plugins)?;
+    let mut valid_plugins = HashSet::<String>::with_capacity((total_plugins + 1000).try_into()?);
+
+    process_plugins(
+        &data.plugins,
+        &mut valid_plugins,
+        &progress_page,
+        &progress_plugins,
+    )?;
     progress_pages.inc(1);
 
     for page in 2..=total_pages {
         let data = get_data(page).await?;
-        process_plugins(&data.plugins, &progress_page, &progress_plugins)?;
+        process_plugins(
+            &data.plugins,
+            &mut valid_plugins,
+            &progress_page,
+            &progress_plugins,
+        )?;
         progress_pages.inc(1);
     }
 
     progress_plugins.finish_with_message("downloaded");
     multiple_progress.clear()?;
+
+    let downloaded_plugins = fs::read_dir(PLUGINS_PATH)?;
+
+    for path in downloaded_plugins {
+        let path = path?;
+        let slug = path.file_name();
+        let slug = slug
+            .to_str()
+            .with_context(|| format!("can't read dir namme: {slug:?}"))?;
+
+        if valid_plugins.contains(slug) {
+            continue;
+        }
+
+        fs::remove_dir_all(path.path())?;
+    }
+
     Ok(())
 }
 
@@ -61,6 +93,7 @@ async fn get_data(page: u64) -> anyhow::Result<Plugins> {
 
 fn process_plugins(
     plugins: &Vec<Plugin>,
+    valid_plugins: &mut HashSet<String>,
     progress_page: &ProgressBar,
     progress_plugins: &ProgressBar,
 ) -> anyhow::Result<()> {
@@ -70,6 +103,8 @@ fn process_plugins(
         if plugin.active_installs < 1000 {
             continue;
         }
+
+        valid_plugins.insert(plugin.slug.clone());
 
         download_plugin(&plugin.slug)?;
         progress_page.inc(1);
@@ -81,7 +116,7 @@ fn process_plugins(
 
 fn download_plugin(plugin_slug: &str) -> anyhow::Result<()> {
     let checkout_url = format!("https://plugins.svn.wordpress.org/{plugin_slug}/trunk");
-    let checkout_path = format!("/home/ubuntu/plugins/{plugin_slug}");
+    let checkout_path = format!("{PLUGINS_PATH}{plugin_slug}");
 
     Command::new("svn")
         .arg("co")
