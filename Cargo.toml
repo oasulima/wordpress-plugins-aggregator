@@ -1,0 +1,12 @@
+[package]
+name = "wordpress-plugins-agregator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+config = "0.14"
+reqwest = { version = "0.12", features = ["json"] }
+scraper = "0.20"
+serde = { version = "1", features = ["derive"] } 
+tokio = { version = "1.23.0", features = ["full"] }
