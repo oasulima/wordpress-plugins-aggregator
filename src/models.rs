@@ -27,13 +27,13 @@ pub struct Plugins {
 #[derive(Serialize, Deserialize)]
 pub struct Info {
     #[serde(rename = "page")]
-    pub page: i64,
+    pub page: u64,
 
     #[serde(rename = "pages")]
-    pub pages: i64,
+    pub pages: u64,
 
     #[serde(rename = "results")]
-    pub results: i64,
+    pub results: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -105,7 +105,7 @@ pub struct Plugin {
     pub download_link: String,
 
     #[serde(rename = "tags")]
-    pub tags: HashMap<String, String>,
+    pub tags: Tags,
 
     #[serde(rename = "donate_link")]
     pub donate_link: String,
@@ -138,13 +138,17 @@ pub enum RequiresPhp {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Tags {
+    HashMap(HashMap<String, String>),
+
+    Vec(Vec<String>),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Tested {
-    #[serde(rename = "6.5.5")]
-    The655,
+    Bool(bool),
 
-    #[serde(rename = "6.6.2")]
-    The662,
-
-    #[serde(rename = "6.7")]
-    The67,
+    String(String),
 }
