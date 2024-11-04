@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Plugins {
     #[serde(rename = "info")]
     pub info: Info,
@@ -24,7 +24,7 @@ pub struct Plugins {
     pub plugins: Vec<Plugin>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Info {
     #[serde(rename = "page")]
     pub page: u64,
@@ -36,7 +36,7 @@ pub struct Info {
     pub results: u64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Plugin {
     #[serde(rename = "name")]
     pub name: String,
@@ -51,10 +51,10 @@ pub struct Plugin {
     pub author: String,
 
     #[serde(rename = "author_profile")]
-    pub author_profile: String,
+    pub author_profile: AuthorProfile,
 
     #[serde(rename = "requires")]
-    pub requires: String,
+    pub requires: Requires,
 
     #[serde(rename = "tested")]
     pub tested: Tested,
@@ -114,7 +114,7 @@ pub struct Plugin {
     pub icons: Icons,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Icons {
     #[serde(rename = "1x")]
     pub the_1_x: Option<String>,
@@ -129,7 +129,7 @@ pub struct Icons {
     pub icons_default: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum RequiresPhp {
     Bool(bool),
@@ -137,7 +137,7 @@ pub enum RequiresPhp {
     String(String),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Tags {
     HashMap(HashMap<String, String>),
@@ -145,9 +145,26 @@ pub enum Tags {
     Vec(Vec<String>),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Tested {
+    Bool(bool),
+
+    String(String),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Requires {
+    Bool(bool),
+
+    String(String),
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum AuthorProfile {
     Bool(bool),
 
     String(String),
